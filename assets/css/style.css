@@ -1,0 +1,16 @@
+.row {
+    border: 1px solid black
+}
+
+
+.city {
+    min-height: 300px;
+}
+
+.forecast {
+    min-height: 200px
+}
+
+.card {
+    height: 200px;
+}
