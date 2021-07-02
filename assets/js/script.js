@@ -9,15 +9,10 @@
  * 8. Also from fetch oneURL, obtain for the next 5 days: dt, temp[day], humidity [For the cards 5 day forecast]
  * 9. Convert dt into MM, DD, YYYY [So we can give the user human dates]
  * 10. Assign key values to appropriate elements and append them to the HTML [display final information to the user]
- */
-
-
-
-
+ **/
 
 cityInput = 'Fremont'
 apiKey = '&units=imperial&appid=04b224ea6e7cb3656cbadc58a9e5d125'
-
 
 fiveDayAPI = 'https://api.openweathermap.org/data/2.5/forecast?q='
 fiveDayURL = fiveDayAPI.concat(cityInput, apiKey);
@@ -36,18 +31,35 @@ function fetchLatLon (url) {
     })
 }
 
-
 //from fiveDayURL, need to grab lat and longitude so we can get currentDayURL.
 function fetchData (lat, lon) {
     var oneAPI = 'https://api.openweathermap.org/data/2.5/onecall?lat='
-    oneURL = oneAPI.concat(lat, '&lon=', lon, '&appid=04b224ea6e7cb3656cbadc58a9e5d125');
+    oneURL = oneAPI.concat(lat, '&lon=', lon, apiKey);
     fetch(oneURL)
         .then(function (response) {
             return response.json()
         })
         .then(function (data) {
             console.log(data);
+            console.log(currentDay(data))
+            // forecastData = forecastDatas(data)
         })
 }
 
+function currentDay(data) {
+    //dt, temp[day], humidity, wind_speed, uvi
+    var dt = data.current['dt']*1000
+    var currentTime = moment(dt).format('MMMM Do, YYYY')
+    return {
+        'date': currentTime,
+        'temp': data.current['temp'],
+        'humidity': data.current['humidity'],
+        'windSpeed': data.current['wind_speed'],
+        'uvIndex': data.current['uvi'],
+    }
+}
+
+emojis = ['☀️', '⛅', '☁️', '🌧', '🌩', '❄️']
 fetchLatLon(fiveDayURL)
+
+// 7. Fetch oneURL and obtain key values for the currentday: dt (unix time), temp[day], humidity, wind_speed, uvi [We need these to display to user]
