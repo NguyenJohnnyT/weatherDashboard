@@ -13,30 +13,27 @@
 
 cityInput = 'Fremont'
 apiKey = '&units=imperial&appid=04b224ea6e7cb3656cbadc58a9e5d125'
-
 fiveDayAPI = 'https://api.openweathermap.org/data/2.5/forecast?q='
 fiveDayURL = fiveDayAPI.concat(cityInput, apiKey);
 
-// var fetchedWeather = await fetchLatLon(fiveDayURL)
-// console.log(fetchedWeather);
-
-const fetchLatLon = async function (url) {
+const fetchLatLon = function (url) {
     fetch(url)
     .then(function (response) {
+        console.log(response);
         return response.json()
     })
     .then(function (data) {
         // console.log(data);
-        console.log(data.city.coord['lat'])
+        console.log(data.city.coord['lat'], data.city.coord['lon'])
         lat = data.city.coord['lat'];
         lon = data.city.coord['lon'];
         // fetchData (lat, lon)
-        return [lat, lon]
+        return [lat,lon]
     })
 }
 
 //from fiveDayURL, need to grab lat and longitude so we can get currentDayURL.
-function fetchData (latLon) {
+const fetchData = function (latLon) {
     var oneAPI = 'https://api.openweathermap.org/data/2.5/onecall?lat='
     oneURL = oneAPI.concat(latLon[0], '&lon=', latLon[1], apiKey);
     fetch(oneURL)
@@ -44,11 +41,9 @@ function fetchData (latLon) {
             return response.json()
         })
         .then(function (data) {
-            // console.log(data);
-            var currentWeather = currentDay(data);
-            var fiveDayForecast = forecastData(data);
-            console.log(currentWeather);
-            console.log(fiveDayForecast);
+            console.log(data);
+            currentWeather = currentDay(data);
+            fiveDayForecast = forecastData(data);
             return [currentWeather, fiveDayForecast]
         })
 }
@@ -85,44 +80,96 @@ function forecastData(data) {
     return forecastArr
 }
 
-let main = async function () {
-    let latLon = await fetchLatLon(fiveDayURL)
-    console.log(latLon)
-    return latLon
+
+const start = async function () {
+    // const result = await fetchLatLon (fiveDayURL)
+    const latLon = await fetch(fiveDayURL)
+    .then(function (response) {
+        console.log(response);
+        return response.json()
+    })
+    .then(function (data) {
+        // console.log(data);
+        // console.log(data.city.coord['lat'], data.city.coord['lon'])
+        lat = data.city.coord['lat'];
+        lon = data.city.coord['lon'];
+        // fetchData (lat, lon)
+        return [lat,lon]
+    })
+    var oneAPI = 'https://api.openweathermap.org/data/2.5/onecall?lat='
+    oneURL = oneAPI.concat(latLon[0], '&lon=', latLon[1], apiKey);
+    const result2 = await fetch(oneURL)
+    .then(function (response) {
+        return response.json()
+    })
+    .then(function (data) {
+        console.log(data);
+        currentWeather = currentDay(data);
+        fiveDayForecast = forecastData(data);
+        return [currentWeather, fiveDayForecast]
+    })
+    console.log('help', result2)
+    finalWeather = determineEmoji(result2)
+    console.log('finalWeather', finalWeather)
+    return finalWeather
 }
 
-let secondary = async function () {
-    let weatherArr = await fetchData(latLon)
-    return weatherArr
-}
+weatherArr = start()
+console.log(weatherArr)
 
-main()
-
-// function determineEmoji () { //iterate through the currentDay and forecast objects' 'weather' property to obtain a string value.  Switch case to give the 'emoji' property an emoji string.
-//     switch () {
-//         case 'clear':
-//             ['emoji'] = emojis[0];
-//             break;
-//         case 'clouds':
-//             ['emoji'] = emojis[1];
-//             break;
-//         case 'drizzle':
-//             ['emoji'] = emojis[3]
-//             break;
-//         case 'rain':
-//             ['emoji'] = emojis[4]
-//             break;
-//         case 'thunderstorm':
-//             ['emoji'] = emojis[5]
-//             break;
-//         case 'snow':
-//             ['emoji'] = emojis[6]
-//             break;
-//         case 'fog':
-//             ['emoji'] = emojis[7]
-//             break;
-//     }
+// const weatherData = async function (latLon) {
+//     var oneAPI = 'https://api.openweathermap.org/data/2.5/onecall?lat='
+//     oneURL = oneAPI.concat(latLon[0], '&lon=', latLon[1], apiKey);
+//     const result = await fetch(oneURL)
+//     .then(function (response) {
+//         return response.json()
+//     })
+//     .then(function (data) {
+//         console.log(data);
+//         currentWeather = currentDay(data);
+//         fiveDayForecast = forecastData(data);
+//         return [currentWeather, fiveDayForecast]
+//     })
+//     console.log(result)
+//     return result
 // }
+
+// weatherData(coordinates)
+
+
+
+function determineEmoji (arr) { //iterate through the currentDay and forecast objects' 'weather' property to obtain a string value.  Switch case to give the 'emoji' property an emoji string.
+    temp1 = [arr[0]];
+    temp2 = arr[1];
+    finalArray = temp1.concat(temp2);
+    console.log('finalArray', finalArray);
+    for (i=0; i<finalArray.length; i++) {
+        switch (finalArray[i]['weather'].toLowerCase()) {
+            case 'clear':
+                finalArray[i]['emoji'] = emojis[0];
+                break;
+            case 'clouds':
+                finalArray[i]['emoji'] = emojis[1];
+                break;
+            case 'drizzle':
+                finalArray[i]['emoji'] = emojis[3]
+                break;
+            case 'rain':
+                finalArray[i]['emoji'] = emojis[4]
+                break;
+            case 'thunderstorm':
+                finalArray[i]['emoji'] = emojis[5]
+                break;
+            case 'snow':
+                finalArray[i]['emoji'] = emojis[6]
+                break;
+            case 'fog':
+                finalArray[i]['emoji'] = emojis[7]
+                break;
+        }
+    }
+    return finalArray
+}
 
 emojis = [ //values from main:
     '☀️', //clear 0
@@ -134,5 +181,3 @@ emojis = [ //values from main:
     '❄️', //snow 6
     '🌫', //fog 7
 ]
-
-
