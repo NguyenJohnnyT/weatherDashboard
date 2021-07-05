@@ -11,11 +11,11 @@
  * 10. Assign key values to appropriate elements and append them to the HTML [display final information to the user]
  **/
 
-searchedCities = [] //local storage
-cityInput = 'San Francisco'
-apiKey = '&units=imperial&appid=04b224ea6e7cb3656cbadc58a9e5d125'
-fiveDayAPI = 'https://api.openweathermap.org/data/2.5/forecast?q='
-fiveDayURL = fiveDayAPI.concat(cityInput, apiKey);
+var searchedCities = [] //local storage
+var cityInput = 'San Francisco'
+var apiKey = '&units=imperial&appid=04b224ea6e7cb3656cbadc58a9e5d125'
+var fiveDayAPI = 'https://api.openweathermap.org/data/2.5/forecast?q='
+var fiveDayURL = fiveDayAPI.concat(cityInput, apiKey);
 
 var emojis = [ //values from main:
     '☀️', //clear 0
@@ -37,8 +37,8 @@ var fetchLatLon = function (url) {
     .then(function (data) {
         // console.log(data);
         console.log(data.city.coord['lat'], data.city.coord['lon'])
-        lat = data.city.coord['lat'];
-        lon = data.city.coord['lon'];
+        var lat = data.city.coord['lat'];
+        var lon = data.city.coord['lon'];
         // fetchData (lat, lon)
         return [lat,lon]
     })
@@ -104,8 +104,9 @@ const start = async function () {
         return response.json()
     })
     .then(function (data) {
-        lat = data.city.coord['lat'];
-        lon = data.city.coord['lon'];
+        console.log(data);
+        var lat = data.city.coord['lat'];
+        var lon = data.city.coord['lon'];
         return [lat,lon]
     });
 
@@ -144,6 +145,10 @@ const start = async function () {
     return finalWeather
 }
 
+function constructMainCard (finalArr) {
+    return
+}
+
 function constructAdditionalCards (finalArr) {
     $('#forecastContainer').empty();
     $('#forecastContainer').append("<h4 style='height:20px'> 5-Day Forecast: </h4>");
@@ -167,8 +172,8 @@ function constructAdditionalCards (finalArr) {
         pEl2.addClass('card-text');
         pEl3.addClass('card-text');
         pEl1.text(finalArr[i]['emoji']);
-        pEl2.text('Temperature: ' + finalArr[i]['temp']);
-        pEl3.text('Humidity: ' + finalArray[i]['humidity']);
+        pEl2.text('Temperature (°F): ' + finalArr[i]['temp']);
+        pEl3.text('Humidity (%): ' + finalArr[i]['humidity']);
 
         cardBodyEl.append(h5El, pEl1, pEl2, pEl3) //Append to card element each data input
         divCardEl.append(cardBodyEl) //append to column the card element
@@ -178,9 +183,9 @@ function constructAdditionalCards (finalArr) {
 
 
 function determineEmoji (arr) { //iterate through the currentDay and forecast objects' 'weather' property to obtain a string value.  Switch case to give the 'emoji' property an emoji string.
-    temp1 = [arr[0]]; //put current weather in an array
-    temp2 = arr[1]; //put the array of forecast objects into another array
-    finalArray = temp1.concat(temp2); //concat array of objects into one 'final' array
+    var temp1 = [arr[0]]; //put current weather in an array
+    var temp2 = arr[1]; //put the array of forecast objects into another array
+    var finalArray = temp1.concat(temp2); //concat array of objects into one 'final' array
     console.log('finalArray', finalArray);
     for (i=0; i<finalArray.length; i++) {
         switch (finalArray[i]['weather'].toLowerCase()) {
@@ -212,8 +217,12 @@ function determineEmoji (arr) { //iterate through the currentDay and forecast ob
     return finalArray
 }
 
+/******************************************
+ * INIT, LOCAL STORAGE
+ * Functions: init, renderCities, saveCities
+ */
 function init () {
-    tempLocal = localStorage.getItem('searchedCities')
+    var tempLocal = localStorage.getItem('searchedCities')
     if (tempLocal !== null) {
         searchedCities = tempLocal;
     } else {localStorage.setItem('searchedCities', [])};
@@ -229,12 +238,19 @@ function renderCities () {
 }
 
 function saveCities (city) {
-    tempLocal = localStorage.getItem('searchedCities'); //obtain current array
-    city = city.split(" " ).join("").toLowerCase(); //standardize the string--no spaces and all lowercase
-    tempLocal.push(city) //add city to current array
+    var tempLocal = localStorage.getItem('searchedCities'); //obtain current array
+    var newCity = city.split(" " ).join("").toLowerCase(); //standardize the string--no spaces and all lowercase
+    tempLocal.push(newCity) //add city to current array
     localStorage.setItem('searchedCities', tempLocal); //set local data to new array
 }
 
+function searchCity (input) { //when a user searches, check if city already in local storage
+    var inputCity = input.split(" ").join("").toLowerCase();
+    if (!localStorage.getItem('searchedCities').includes(inputCity)) {
+        saveCities(inputCity); //if not in local storage, save it.
+    }
+    renderCities()
+}
 
 $('#searchCity').on('click', function () {console.log('click!')}); //start
 weatherArr = start();
