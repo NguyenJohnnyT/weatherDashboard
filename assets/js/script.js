@@ -11,6 +11,7 @@
  * 10. Assign key values to appropriate elements and append them to the HTML [display final information to the user]
  **/
 
+searchedCities = [] //local storage
 cityInput = 'San Francisco'
 apiKey = '&units=imperial&appid=04b224ea6e7cb3656cbadc58a9e5d125'
 fiveDayAPI = 'https://api.openweathermap.org/data/2.5/forecast?q='
@@ -62,8 +63,8 @@ var fetchData = function (latLon) {
 function currentDay(data) {
     //return an object that include weather data for day zero
     //dt, temp[day], humidity, wind_speed, uvi, weather general
-    var dt = data.current['dt']*1000
-    var currentTime = moment(dt).format('MMMM Do, YYYY')
+    var dt = data.current['dt']*1000;
+    var currentTime = moment(dt).format('MMMM Do, YYYY');
     return {
         'date': currentTime,
         'temp': data.current['temp'],
@@ -78,7 +79,7 @@ function currentDay(data) {
 function forecastData(data) {
     //obtain an array of objects that include weather data for days 1-6 (five day forecast)
     //dt, temp[day], humidity, weather general
-    var forecastArr = []
+    var forecastArr = [];
     for (i=1; i < 6; i++) {
         object = {};
         var dt = data.daily[i]['dt']*1000;
@@ -86,8 +87,8 @@ function forecastData(data) {
         object['date'] = currentTime;
         object['temp'] = data.daily[i].temp['day'];
         object['humidity'] = data.daily[i]['humidity'];
-        object['weather'] = data.daily[i].weather[0]['main']
-        object['emoji'] = ''
+        object['weather'] = data.daily[i].weather[0]['main'];
+        object['emoji'] = '';
         forecastArr.push(object);
     }
     return forecastArr
@@ -106,7 +107,7 @@ const start = async function () {
         lat = data.city.coord['lat'];
         lon = data.city.coord['lon'];
         return [lat,lon]
-    })
+    });
 
     //fetchData
     var oneAPI = 'https://api.openweathermap.org/data/2.5/onecall?lat='
@@ -119,9 +120,10 @@ const start = async function () {
         currentWeather = currentDay(data); //object of current day's 
         fiveDayForecast = forecastData(data); //an array of objects
         return [currentWeather, fiveDayForecast]
-    })
-    finalWeather = determineEmoji(result2) //an array of objects from day 0 to 5
-    console.log('finalWeather', finalWeather)
+    });
+    finalWeather = determineEmoji(result2); //an array of objects from day 0 to 5
+    console.log('finalWeather', finalWeather);
+    constructAdditionalCards(finalWeather);
     //Setting all values in the HTML PAGE 
     // var divCard = document.createElement("div"); 
     // divCard.setAttribute("class", "col card"); 
@@ -189,31 +191,51 @@ function determineEmoji (arr) { //iterate through the currentDay and forecast ob
                 finalArray[i]['emoji'] = emojis[1];
                 break;
             case 'drizzle':
-                finalArray[i]['emoji'] = emojis[3]
+                finalArray[i]['emoji'] = emojis[3];
                 break;
             case 'rain':
-                finalArray[i]['emoji'] = emojis[4]
+                finalArray[i]['emoji'] = emojis[4];
                 break;
             case 'thunderstorm':
-                finalArray[i]['emoji'] = emojis[5]
+                finalArray[i]['emoji'] = emojis[5];
                 break;
             case 'snow':
-                finalArray[i]['emoji'] = emojis[6]
+                finalArray[i]['emoji'] = emojis[6];
                 break;
             case 'fog':
-                finalArray[i]['emoji'] = emojis[7]
+                finalArray[i]['emoji'] = emojis[7];
                 break;
             default:
-                finalArray[i]['emoji'] = emojis[0]
+                finalArray[i]['emoji'] = emojis[0];
         }
     }
     return finalArray
 }
 
+function init () {
+    tempLocal = localStorage.getItem('searchedCities')
+    if (tempLocal !== null) {
+        searchedCities = tempLocal;
+    } else {localStorage.setItem('searchedCities', [])};
+    renderCities ();
+}
+
+function renderCities () {
+    for (var i=0; i<searchedCities.length; i++) {
+        newLiEl = $('<li>');
+        newLiEl.text(searchedCities[i]);
+        newLiEl.appendTo('.list-group');
+    }
+}
+
+function saveCities (city) {
+    tempLocal = localStorage.getItem('searchedCities'); //obtain current array
+    city = city.split(" " ).join("").toLowerCase(); //standardize the string--no spaces and all lowercase
+    tempLocal.push(city) //add city to current array
+    localStorage.setItem('searchedCities', tempLocal); //set local data to new array
+}
 
 
-
-
-$('#searchCity').on('click', function () {console.log('click!')}) //start
-weatherArr = start()
-console.log(weatherArr)
+$('#searchCity').on('click', function () {console.log('click!')}); //start
+weatherArr = start();
+console.log(weatherArr);
