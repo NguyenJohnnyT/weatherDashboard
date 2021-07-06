@@ -26,4 +26,4 @@ You may clear the search history by clicking on the `Clear History` button.
 [jQuery](https://code.jquery.com/)\
 [Bootstrap](https://getbootstrap.com/)\
 [Moment.js](https://momentjs.com/)\
-[OpenWeather API](https://openweathermap.org/api)\
+[OpenWeather API](https://openweathermap.org/api)
