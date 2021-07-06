@@ -14,8 +14,6 @@
 var searchedCities = [] //local storage
 var cityInput = 'San Francisco'
 var apiKey = '&units=imperial&appid=04b224ea6e7cb3656cbadc58a9e5d125'
-var fiveDayAPI = 'https://api.openweathermap.org/data/2.5/forecast?q='
-var fiveDayURL = fiveDayAPI.concat(cityInput, apiKey);
 
 var emojis = [ //values from main:
     '☀️', //clear 0
@@ -95,11 +93,19 @@ function forecastData(data) {
 }
 
 
-const start = async function () {
+const start = async function (city) {
+    var cityInput = city;
+    var fiveDayAPI = 'https://api.openweathermap.org/data/2.5/forecast?q=';
+    var fiveDayURL = fiveDayAPI.concat(cityInput, apiKey);
+    var validCity = true
+    var cityName = ""
 
     //fetchLatLon
     const latLon = await fetch(fiveDayURL)
     .then(function (response) {
+        if (response.status === 404) {
+            validCity = false
+        }
         console.log('response', response);
         return response.json()
     })
@@ -107,6 +113,7 @@ const start = async function () {
         console.log(data);
         var lat = data.city.coord['lat'];
         var lon = data.city.coord['lon'];
+        cityName = data.city['name']
         return [lat,lon]
     });
 
@@ -118,12 +125,14 @@ const start = async function () {
         return response.json()
     })
     .then(function (data) {
+        console.log(data);
         currentWeather = currentDay(data); //object of current day's 
         fiveDayForecast = forecastData(data); //an array of objects
         return [currentWeather, fiveDayForecast]
     });
     finalWeather = determineEmoji(result2); //an array of objects from day 0 to 5
     console.log('finalWeather', finalWeather);
+    constructMainCard(finalWeather, cityName);
     constructAdditionalCards(finalWeather);
     //Setting all values in the HTML PAGE 
     // var divCard = document.createElement("div"); 
@@ -140,13 +149,42 @@ const start = async function () {
     
     //SAVE IN the localstorage 
    // "San Fran", "London", "Dublin" 
-   var previousList = localStorage.getItem("searchList") 
-    localStorage.setItem("searchList", JSON.stringify(cityInput))
+//    var previousList = localStorage.getItem("searchList") 
+    // localStorage.setItem("searchList", JSON.stringify(cityInput))
     return finalWeather
 }
 
-function constructMainCard (finalArr) {
-    return
+function constructMainCard (finalArr, city) {
+    var dayZeroContainer = $('#dayZero');
+    dayZeroContainer.empty();
+    var currentDay = finalArr[0]
+    var h1El = $('<h1>'); //City name, date, emoji
+    var pEl1 = $('<p>'); //temp
+    var pEl2 = $('<p>'); //humidity
+    var pEl3 = $('<p>'); //wind speed
+    var pEl4 = $('<p>'); //uv index header
+    var spanUV = $('<span>'); //uv number
+
+    h1El.text(city + ' ' + currentDay['date'] + ' ' + currentDay['emoji']);
+    pEl1.text('Temperature (°F): ' + currentDay['temp'])
+    pEl2.text('Humidity (%): ' + currentDay['humidity'])
+    pEl3.text('Wind Speed (MPH): ' + currentDay['windSpeed'])
+    pEl4.text('UV Index: ')
+
+    var flag = determineUVFlag(currentDay['uvIndex']);
+    spanUV.text(currentDay['uvIndex']);
+    spanUV.addClass('p-2 text-white ' + flag);
+    spanUV.appendTo(pEl4);
+
+    dayZeroContainer.append(h1El, pEl1, pEl2, pEl3, pEl4);
+}
+
+function determineUVFlag (UV_Index) {
+    if (UV_Index < 3) {
+        return 'bg-success'
+    } else if (UV_Index < 8) {
+        return 'bg-warning'
+    } else {return 'bg-danger'}
 }
 
 function constructAdditionalCards (finalArr) {
@@ -219,39 +257,50 @@ function determineEmoji (arr) { //iterate through the currentDay and forecast ob
 
 /******************************************
  * INIT, LOCAL STORAGE
- * Functions: init, renderCities, saveCities
+ * Functions: init, renderCities, saveCities, searchCity
  */
 function init () {
-    var tempLocal = localStorage.getItem('searchedCities')
+    var tempLocal = localStorage.getItem('searchedCities');
+    console.log(tempLocal)
     if (tempLocal !== null) {
         searchedCities = tempLocal;
-    } else {localStorage.setItem('searchedCities', [])};
-    renderCities ();
+    } else {localStorage.setItem('searchedCities', JSON.stringify(searchedCities))};
+    renderCities (searchedCities);
 }
 
-function renderCities () {
-    for (var i=0; i<searchedCities.length; i++) {
+function renderCities (cities) {
+    for (var i=0; i<cities.length; i++) {
         newLiEl = $('<li>');
-        newLiEl.text(searchedCities[i]);
+        newLiEl.text(cities[i]);
         newLiEl.appendTo('.list-group');
     }
 }
 
 function saveCities (city) {
     var tempLocal = localStorage.getItem('searchedCities'); //obtain current array
-    var newCity = city.split(" " ).join("").toLowerCase(); //standardize the string--no spaces and all lowercase
-    tempLocal.push(newCity) //add city to current array
-    localStorage.setItem('searchedCities', tempLocal); //set local data to new array
+    tempLocal.push(city) //add city to current array
+    localStorage.setItem('searchedCities', JSON.stringify(tempLocal)); //set local data to new array
 }
 
-function searchCity (input) { //when a user searches, check if city already in local storage
-    var inputCity = input.split(" ").join("").toLowerCase();
-    if (!localStorage.getItem('searchedCities').includes(inputCity)) {
-        saveCities(inputCity); //if not in local storage, save it.
+function updateCity (userPrompt) { //when a user searches, check if city already in local storage
+    if (!userPrompt) {
+        return
+    } 
+    else{
+        var inputCity = userPrompt.trim().split(" ").join("").toLowerCase();
+        if (!localStorage.getItem('searchedCities').includes(inputCity)) {
+            saveCities(userPrompt); //if not in local storage, save it.
+        }
     }
-    renderCities()
+    start(userInput)
 }
 
-$('#searchCity').on('click', function () {console.log('click!')}); //start
-weatherArr = start();
+$('#searchCity').on('click', function () {
+    console.log('click!');
+    var userInput = $('.form-control').val;
+    updateCity(userInput);
+}); //updateCity
+
+weatherArr = start('San Francisco');
 console.log(weatherArr);
+init();

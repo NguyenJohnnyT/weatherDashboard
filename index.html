@@ -19,7 +19,7 @@
             <div class='col-4 p-2'> <!-- search for a city -->
                 Search for a City
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control" placeholder="Enter a city" >
+                    <input type="text" class="form-control" placeholder="Enter a city" id='userInput'>
                     <button type='submit' class="input-group-append btn btn-primary" id="searchCity">Search</button>
                 </div>
                 <ul class="list-group">
@@ -33,9 +33,7 @@
 
             <div class=col-8> <!-- city and forecast -->
                 <div class='row city'> <!--big section for city display-->
-                    <div class='col-12'>
-                        Hellooooo
-                    </div>
+                    <div class='col-12' id='dayZero'></div>
                 </div>
                 <div class='row forecast' id='forecastContainer'> <!-- cards for weather display-->
                     <h4 style='height:20px'>5-Day Forecast:</h4>
