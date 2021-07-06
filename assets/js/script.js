@@ -260,15 +260,16 @@ function determineEmoji (arr) { //iterate through the currentDay and forecast ob
  * Functions: init, renderCities, saveCities, searchCity
  */
 function init () {
-    var tempLocal = localStorage.getItem('searchedCities');
+    var tempLocal = JSON.parse(localStorage.getItem('searchedCities'));
     console.log(tempLocal)
     if (tempLocal !== null) {
+        console.log('searchedCities already exists, line 266')
         searchedCities = tempLocal;
     } else {localStorage.setItem('searchedCities', JSON.stringify(searchedCities))};
     renderCities (searchedCities);
 }
 
-function renderCities (cities) {
+function renderCities (cities) { //
     for (var i=0; i<cities.length; i++) {
         newLiEl = $('<li>');
         newLiEl.text(cities[i]);
@@ -277,27 +278,34 @@ function renderCities (cities) {
 }
 
 function saveCities (city) {
-    var tempLocal = localStorage.getItem('searchedCities'); //obtain current array
+    var tempLocal = JSON.parse(localStorage.getItem('searchedCities')); //obtain current array
     tempLocal.push(city) //add city to current array
+    renderCities(tempLocal); //render new cities once searched
     localStorage.setItem('searchedCities', JSON.stringify(tempLocal)); //set local data to new array
+    
 }
 
 function updateCity (userPrompt) { //when a user searches, check if city already in local storage
     if (!userPrompt) {
+        alert('Please enter a city')
         return
     } 
     else{
         var inputCity = userPrompt.trim().split(" ").join("").toLowerCase();
-        if (!localStorage.getItem('searchedCities').includes(inputCity)) {
-            saveCities(userPrompt); //if not in local storage, save it.
+        var tempLocal = JSON.parse(localStorage.getItem('searchedCities'));
+        // console.log(inputCity, tempLocal);
+        if (!tempLocal.includes(inputCity)) {
+            console.log('inputCity: ' + inputCity + ' not in ' + this)
+            saveCities(inputCity); //if not in local storage, save it.
         }
     }
-    start(userInput)
+    renderCities()
+    start(userPrompt)
 }
 
 $('#searchCity').on('click', function () {
     console.log('click!');
-    var userInput = $('.form-control').val;
+    var userInput = $('.form-control').val();
     updateCity(userInput);
 }); //updateCity
 
