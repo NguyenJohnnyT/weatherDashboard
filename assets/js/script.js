@@ -12,9 +12,7 @@
  **/
 
 var searchedCities = [] //local storage
-var cityInput = 'San Francisco'
 var apiKey = '&units=imperial&appid=04b224ea6e7cb3656cbadc58a9e5d125'
-
 var emojis = [ //values from main:
     '☀️', //clear 0
     '⛅', //clouds 1
@@ -26,36 +24,56 @@ var emojis = [ //values from main:
     '🌫', //fog 7
 ];
 
-var fetchLatLon = function (url) {
-    fetch(url)
+/**********************************************
+ * Obtaining weather data.  The function start will fetch data from five day API and one API.  
+ * CurrentDay and forecastData will create objects to define weather data from days zero to five (Six days total)
+ * Determine Emoji will find the weaher['main'] value for each objecto to determine which emoji will be displayed
+ * Functions: start, currentDay, forecastData, determineEmoji
+ */
+const start = async function (city) {
+    var fiveDayAPI = 'https://api.openweathermap.org/data/2.5/forecast?q=';
+    var fiveDayURL = fiveDayAPI.concat(city, apiKey);
+    var cityName = "";
+
+    //fetchLatLon - obtain latitude and longitudes for fetchData
+    const latLon = await fetch(fiveDayURL)
     .then(function (response) {
-        console.log(response);
+        if (!response.ok) {
+            alert('Not a valid city');
+            searchedCities.pop(city);
+            saveCities();
+            renderCities(searchedCities);
+            return
+        }
+        console.log('response', response);
         return response.json()
     })
     .then(function (data) {
-        // console.log(data);
-        console.log(data.city.coord['lat'], data.city.coord['lon'])
+        console.log(data);
         var lat = data.city.coord['lat'];
         var lon = data.city.coord['lon'];
-        // fetchData (lat, lon)
+        cityName = data.city['name']
         return [lat,lon]
-    })
-}
+    });
 
-//from fiveDayURL, need to grab lat and longitude so we can get currentDayURL.
-var fetchData = function (latLon) {
+    //fetchData - obtain weather objects for days 0 to 5
     var oneAPI = 'https://api.openweathermap.org/data/2.5/onecall?lat='
     oneURL = oneAPI.concat(latLon[0], '&lon=', latLon[1], apiKey);
-    fetch(oneURL)
-        .then(function (response) {
-            return response.json()
-        })
-        .then(function (data) {
-            console.log(data);
-            currentWeather = currentDay(data); //an object
-            fiveDayForecast = forecastData(data); //an array of objects
-            return [currentWeather, fiveDayForecast]
-        })
+    const weatherObj = await fetch(oneURL)
+    .then(function (response) {
+        return response.json()
+    })
+    .then(function (data) {
+        console.log(data);
+        currentWeather = currentDay(data); //object of current day's 
+        fiveDayForecast = forecastData(data); //an array of objects
+        return [currentWeather, fiveDayForecast]
+    });
+    finalWeather = determineEmoji(weatherObj); //an array of objects from day 0 to 5
+    // console.log('finalWeather', finalWeather);
+    constructMainCard(finalWeather, cityName); //generate the current day data
+    constructAdditionalCards(finalWeather); //generate the forecast data
+    return finalWeather
 }
 
 function currentDay(data) {
@@ -92,59 +110,45 @@ function forecastData(data) {
     return forecastArr
 }
 
-
-const start = async function (city) {
-    var cityInput = city;
-    var fiveDayAPI = 'https://api.openweathermap.org/data/2.5/forecast?q=';
-    var fiveDayURL = fiveDayAPI.concat(cityInput, apiKey);
-    var validCity = true
-    var cityName = ""
-
-    //fetchLatLon
-    const latLon = await fetch(fiveDayURL)
-    .then(function (response) {
-        if (!response.ok) {
-            validCity = false
-            alert('Not a valid city')
-            searchedCities.pop(cityInput)
-            renderCities(searchedCities)
-            return
+function determineEmoji (arr) { //iterate through the currentDay and forecast objects' 'weather' property to obtain a string value.  Switch case to give the 'emoji' property an emoji string.
+    var temp1 = [arr[0]]; //put current weather in an array
+    var temp2 = arr[1]; //put the array of forecast objects into another array
+    var finalArray = temp1.concat(temp2); //concat array of objects into one 'final' array
+    // console.log('finalArray', finalArray);
+    for (i=0; i<finalArray.length; i++) {
+        switch (finalArray[i]['weather'].toLowerCase()) {
+            // case 'clear':
+            //     finalArray[i]['emoji'] = emojis[0];
+            //     break;
+            case 'clouds':
+                finalArray[i]['emoji'] = emojis[1];
+                break;
+            case 'drizzle':
+                finalArray[i]['emoji'] = emojis[3];
+                break;
+            case 'rain':
+                finalArray[i]['emoji'] = emojis[4];
+                break;
+            case 'thunderstorm':
+                finalArray[i]['emoji'] = emojis[5];
+                break;
+            case 'snow':
+                finalArray[i]['emoji'] = emojis[6];
+                break;
+            case 'fog':
+                finalArray[i]['emoji'] = emojis[7];
+                break;
+            default:
+                finalArray[i]['emoji'] = emojis[0];
         }
-        console.log('response', response);
-        return response.json()
-    })
-    .then(function (data) {
-        console.log(data);
-        var lat = data.city.coord['lat'];
-        var lon = data.city.coord['lon'];
-        cityName = data.city['name']
-        return [lat,lon]
-    });
-
-    if (!validCity) {
-        return
     }
-
-    //fetchData
-    var oneAPI = 'https://api.openweathermap.org/data/2.5/onecall?lat='
-    oneURL = oneAPI.concat(latLon[0], '&lon=', latLon[1], apiKey);
-    const result2 = await fetch(oneURL)
-    .then(function (response) {
-        return response.json()
-    })
-    .then(function (data) {
-        console.log(data);
-        currentWeather = currentDay(data); //object of current day's 
-        fiveDayForecast = forecastData(data); //an array of objects
-        return [currentWeather, fiveDayForecast]
-    });
-    finalWeather = determineEmoji(result2); //an array of objects from day 0 to 5
-    // console.log('finalWeather', finalWeather);
-    constructMainCard(finalWeather, cityName); //generate the current day data
-    constructAdditionalCards(finalWeather); //generate the forecast data
-    return finalWeather
+    return finalArray
 }
 
+/********************************************** 
+ * Displaying weather data and creating elements in the HTML
+ * functions: constructMainCard, determineUVFlag, constructAdditionalCards
+*/
 function constructMainCard (finalArr, city) {
     var dayZeroContainer = $('#dayZero');
     dayZeroContainer.empty();
@@ -210,45 +214,12 @@ function constructAdditionalCards (finalArr) {
     }
 }
 
-
-function determineEmoji (arr) { //iterate through the currentDay and forecast objects' 'weather' property to obtain a string value.  Switch case to give the 'emoji' property an emoji string.
-    var temp1 = [arr[0]]; //put current weather in an array
-    var temp2 = arr[1]; //put the array of forecast objects into another array
-    var finalArray = temp1.concat(temp2); //concat array of objects into one 'final' array
-    // console.log('finalArray', finalArray);
-    for (i=0; i<finalArray.length; i++) {
-        switch (finalArray[i]['weather'].toLowerCase()) {
-            // case 'clear':
-            //     finalArray[i]['emoji'] = emojis[0];
-            //     break;
-            case 'clouds':
-                finalArray[i]['emoji'] = emojis[1];
-                break;
-            case 'drizzle':
-                finalArray[i]['emoji'] = emojis[3];
-                break;
-            case 'rain':
-                finalArray[i]['emoji'] = emojis[4];
-                break;
-            case 'thunderstorm':
-                finalArray[i]['emoji'] = emojis[5];
-                break;
-            case 'snow':
-                finalArray[i]['emoji'] = emojis[6];
-                break;
-            case 'fog':
-                finalArray[i]['emoji'] = emojis[7];
-                break;
-            default:
-                finalArray[i]['emoji'] = emojis[0];
-        }
-    }
-    return finalArray
-}
-
 /******************************************
  * INIT, LOCAL STORAGE
- * Functions: init, renderCities, saveCities, searchCity
+ * Init will initialize the page and render any localstorage the user has.
+ * renderCities will show the list on the webpage, saveCities will store the key values of local storage into the localStorage.
+ * updateCity will take in a user input and add it to the searchedCities array.
+ * Functions: init, renderCities, saveCities, updateCity
  */
 function init () {
     var tempLocal = JSON.parse(localStorage.getItem('searchedCities'));
@@ -286,45 +257,15 @@ function updateCity (userPrompt) { //when a user searches, check if city already
         var inputCity = userPrompt.trim();
         searchedCities.push(inputCity)//push user city into global array
         saveCities()
-        // var geoCodeURL = ''.concat('http://api.openweathermap.org/geo/1.0/direct?q=' + inputCity + '&appid=04b224ea6e7cb3656cbadc58a9e5d125')
-        // console.log('geocodeurl', geoCodeURL)
-        // var checkCity = fetch(geoCodeURL)
-        //     .then(function (response) {
-        //         if (!response.ok) {
-        //             return false
-        //         } else {return false}
-        //     })
-        // console.log(checkCity)
-        // if (checkCity) {
-        //     console.log(298, true)
-        var tempLocal = JSON.parse(localStorage.getItem('searchedCities'));
-        console.log('tempLocal', tempLocal)
-        // console.log(inputCity, tempLocal);
-        // if (!tempLocal.includes(inputCity)) {
-        //     console.log('inputCity: ' + inputCity + ' not in ' + tempLocal)
-        //     saveCities(inputCity); //if not in local storage, save it.
-        // }
-        // } else {
-        //     alert(userPrompt + ' is not a valid city');
-        //     return
     }
     renderCities(searchedCities)
     start(userPrompt)
 }
 
-var checkIfValidCity = async function (city) {
-    geoCodeURL = 'http://api.openweathermap.org/geo/1.0/direct?q=' + city + '&appid=04b224ea6e7cb3656cbadc58a9e5d125'
-    console.log('geocode', geoCodeURL)
-    return fetch(geoCodeURL)
-        .then(function (response) {
-            if (response.ok) {
-                return true
-            } else {return false}
-        })
-}
-
-
-
+/******************************************
+ * On click events
+ * Used for searching for a city and accessing the search history
+ */
 $('#searchCity').on('click', function () {
     console.log('click!');
     var userInput = $('.form-control').val();
@@ -338,5 +279,5 @@ $('#cityHistory').on('click', 'button', function() {
     start(city);
 });
 
-
+//Page initilization
 init();
