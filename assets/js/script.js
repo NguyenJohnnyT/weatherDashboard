@@ -219,7 +219,8 @@ function constructAdditionalCards (finalArr) {
  * Init will initialize the page and render any localstorage the user has.
  * renderCities will show the list on the webpage, saveCities will store the key values of local storage into the localStorage.
  * updateCity will take in a user input and add it to the searchedCities array.
- * Functions: init, renderCities, saveCities, updateCity
+ * clearCities will clear localStorage and set key-value to an empty array.  Also clears  the list out of the webpage.
+ * Functions: init, renderCities, saveCities, updateCity, clearCities
  */
 function init () {
     var tempLocal = JSON.parse(localStorage.getItem('searchedCities'));
@@ -262,6 +263,12 @@ function updateCity (userPrompt) { //when a user searches, check if city already
     start(userPrompt)
 }
 
+function clearCities() {
+    searchedCities = [];
+    localStorage.setItem('searchedCities', JSON.stringify(searchedCities));
+    renderCities(searchedCities);
+}
+
 /******************************************
  * On click events
  * Used for searching for a city and accessing the search history
@@ -272,12 +279,21 @@ $('#searchCity').on('click', function () {
     updateCity(userInput);
 }); //updateCity
 
+$('#clearHistory').on('click', function() {
+    console.log('click..');
+    toDelete = confirm('Are you sure you want to clear the search history?');
+    if (toDelete) {
+        clearCities();
+    }
+})
+
 $('#cityHistory').on('click', 'button', function() {
     console.log('click!');
     var city = $(this).text();
     // console.log('line 333', city);
     start(city);
 });
+
 
 //Page initilization
 init();
