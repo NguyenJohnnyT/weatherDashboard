@@ -103,8 +103,12 @@ const start = async function (city) {
     //fetchLatLon
     const latLon = await fetch(fiveDayURL)
     .then(function (response) {
-        if (response.status === 404) {
+        if (!response.ok) {
             validCity = false
+            alert('Not a valid city')
+            searchedCities.pop(cityInput)
+            renderCities(searchedCities)
+            return
         }
         console.log('response', response);
         return response.json()
@@ -116,6 +120,10 @@ const start = async function (city) {
         cityName = data.city['name']
         return [lat,lon]
     });
+
+    if (!validCity) {
+        return
+    }
 
     //fetchData
     var oneAPI = 'https://api.openweathermap.org/data/2.5/onecall?lat='
@@ -131,26 +139,9 @@ const start = async function (city) {
         return [currentWeather, fiveDayForecast]
     });
     finalWeather = determineEmoji(result2); //an array of objects from day 0 to 5
-    console.log('finalWeather', finalWeather);
-    constructMainCard(finalWeather, cityName);
-    constructAdditionalCards(finalWeather);
-    //Setting all values in the HTML PAGE 
-    // var divCard = document.createElement("div"); 
-    // divCard.setAttribute("class", "col card"); 
-    // var divTitle = document.createElement("h5"); 
-    // divTitle.setAttribute(); 
-    // divTitle.textContent = finalweather[index].date; 
-
-    // divCard.append(divTitle, p1, p2); 
-
-    // document.getElementsByClassName("row forecast").append(divCard); 
-
-    // document.getElementById("day1Title").textContent =  finalWeather[1].date;
-    
-    //SAVE IN the localstorage 
-   // "San Fran", "London", "Dublin" 
-//    var previousList = localStorage.getItem("searchList") 
-    // localStorage.setItem("searchList", JSON.stringify(cityInput))
+    // console.log('finalWeather', finalWeather);
+    constructMainCard(finalWeather, cityName); //generate the current day data
+    constructAdditionalCards(finalWeather); //generate the forecast data
     return finalWeather
 }
 
@@ -224,7 +215,7 @@ function determineEmoji (arr) { //iterate through the currentDay and forecast ob
     var temp1 = [arr[0]]; //put current weather in an array
     var temp2 = arr[1]; //put the array of forecast objects into another array
     var finalArray = temp1.concat(temp2); //concat array of objects into one 'final' array
-    console.log('finalArray', finalArray);
+    // console.log('finalArray', finalArray);
     for (i=0; i<finalArray.length; i++) {
         switch (finalArray[i]['weather'].toLowerCase()) {
             // case 'clear':
@@ -265,24 +256,25 @@ function init () {
     if (tempLocal !== null) {
         console.log('searchedCities already exists, line 266')
         searchedCities = tempLocal;
-    } else {localStorage.setItem('searchedCities', JSON.stringify(searchedCities))};
+    }
+
     renderCities (searchedCities);
 }
 
 function renderCities (cities) { //
-    for (var i=0; i<cities.length; i++) {
-        newLiEl = $('<li>');
+    $('.list-group').empty()
+    for (var i=cities.length-1; i>=0; i--) {
+        newLiEl = $('<button>');
         newLiEl.text(cities[i]);
+        newLiEl.attr('type', 'button');
+        // newLiEl.attr('id', 'cityHistory');
+        newLiEl.addClass('btn btn-secondary');
         newLiEl.appendTo('.list-group');
     }
 }
 
-function saveCities (city) {
-    var tempLocal = JSON.parse(localStorage.getItem('searchedCities')); //obtain current array
-    tempLocal.push(city) //add city to current array
-    renderCities(tempLocal); //render new cities once searched
-    localStorage.setItem('searchedCities', JSON.stringify(tempLocal)); //set local data to new array
-    
+function saveCities () {
+    localStorage.setItem('searchedCities', JSON.stringify(searchedCities)); //obtain current array
 }
 
 function updateCity (userPrompt) { //when a user searches, check if city already in local storage
@@ -291,17 +283,47 @@ function updateCity (userPrompt) { //when a user searches, check if city already
         return
     } 
     else{
-        var inputCity = userPrompt.trim().split(" ").join("").toLowerCase();
+        var inputCity = userPrompt.trim();
+        searchedCities.push(inputCity)//push user city into global array
+        saveCities()
+        // var geoCodeURL = ''.concat('http://api.openweathermap.org/geo/1.0/direct?q=' + inputCity + '&appid=04b224ea6e7cb3656cbadc58a9e5d125')
+        // console.log('geocodeurl', geoCodeURL)
+        // var checkCity = fetch(geoCodeURL)
+        //     .then(function (response) {
+        //         if (!response.ok) {
+        //             return false
+        //         } else {return false}
+        //     })
+        // console.log(checkCity)
+        // if (checkCity) {
+        //     console.log(298, true)
         var tempLocal = JSON.parse(localStorage.getItem('searchedCities'));
+        console.log('tempLocal', tempLocal)
         // console.log(inputCity, tempLocal);
-        if (!tempLocal.includes(inputCity)) {
-            console.log('inputCity: ' + inputCity + ' not in ' + this)
-            saveCities(inputCity); //if not in local storage, save it.
-        }
+        // if (!tempLocal.includes(inputCity)) {
+        //     console.log('inputCity: ' + inputCity + ' not in ' + tempLocal)
+        //     saveCities(inputCity); //if not in local storage, save it.
+        // }
+        // } else {
+        //     alert(userPrompt + ' is not a valid city');
+        //     return
     }
-    renderCities()
+    renderCities(searchedCities)
     start(userPrompt)
 }
+
+var checkIfValidCity = async function (city) {
+    geoCodeURL = 'http://api.openweathermap.org/geo/1.0/direct?q=' + city + '&appid=04b224ea6e7cb3656cbadc58a9e5d125'
+    console.log('geocode', geoCodeURL)
+    return fetch(geoCodeURL)
+        .then(function (response) {
+            if (response.ok) {
+                return true
+            } else {return false}
+        })
+}
+
+
 
 $('#searchCity').on('click', function () {
     console.log('click!');
@@ -309,6 +331,12 @@ $('#searchCity').on('click', function () {
     updateCity(userInput);
 }); //updateCity
 
-weatherArr = start('San Francisco');
-console.log(weatherArr);
+$('#cityHistory').on('click', 'button', function() {
+    console.log('click!');
+    var city = $(this).text();
+    // console.log('line 333', city);
+    start(city);
+});
+
+
 init();
